@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>야근수첩 - 알림 한 번으로 남기는 야근 기록</title>
+<meta name="description" content="퇴근 시간에 오는 알림에 버튼만 누르면 야근이 기록돼요. 이번 달 야근과 나의 야수 등급을 한눈에 확인하세요.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://overtimenote.kr/">
+<meta property="og:title" content="야근수첩 - 오늘도 야근?">
+<meta property="og:description" content="알림 한 번으로 야근 기록 끝. 나는 몇 등급 야수일까?">
+<meta property="og:image" content="https://overtimenote.kr/img/og.jpg">
+<meta name="theme-color" content="#1E234E">
+<link rel="icon" href="/favicon.png">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root {
+    --night: #1E234E;
+    --night-2: #2A3170;
+    --ink: #191F28;
+    --muted: #6B7684;
+    --line: #E5E8EB;
+    --bg: #F7F8FA;
+    --blue: #3182F6;
+    --yellow: #FAC775;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    color: var(--ink);
+    background: #fff;
+    line-height: 1.6;
+    word-break: keep-all;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+
+  /* top bar */
+  .top { position: sticky; top: 0; z-index: 10; background: rgba(30,35,78,.92); backdrop-filter: blur(8px); }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; font-weight: 800; font-size: 18px; }
+  .brand img { width: 32px; height: 32px; border-radius: 8px; }
+  .top .cta-sm { color: var(--night); background: var(--yellow); text-decoration: none; font-weight: 700; font-size: 14px; padding: 8px 14px; border-radius: 999px; }
+
+  /* hero */
+  .hero { background: radial-gradient(1200px 500px at 80% -10%, #3A4396 0%, var(--night) 55%); color: #fff; padding: 56px 0 72px; overflow: hidden; }
+  .hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: center; }
+  .eyebrow { display: inline-block; font-size: 14px; font-weight: 700; color: var(--yellow); background: rgba(250,199,117,.12); padding: 6px 12px; border-radius: 999px; }
+  .hero h1 { font-size: clamp(34px, 6vw, 54px); line-height: 1.2; margin: 16px 0 14px; letter-spacing: -0.02em; }
+  .hero h1 em { font-style: normal; color: var(--yellow); }
+  .hero p.lead { font-size: 18px; color: #D5D9F2; margin: 0 0 28px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 700; padding: 14px 20px; border-radius: 14px; font-size: 16px; }
+  .btn.primary { background: var(--yellow); color: var(--night); }
+  .btn.ghost { color: #fff; border: 1px solid rgba(255,255,255,.35); }
+  .btn.ghost[aria-disabled="true"] { opacity: .75; cursor: default; }
+  .note { font-size: 13px; color: #A9B0D6; margin-top: 14px; }
+
+  /* phone mock with notification */
+  .phone { justify-self: center; width: 300px; aspect-ratio: 9 / 18.5; border-radius: 40px; background: linear-gradient(160deg, #2B3277, #151937); border: 8px solid #0E1129; box-shadow: 0 30px 60px rgba(0,0,0,.35); padding: 54px 14px 14px; position: relative; }
+  .phone .clock { text-align: center; color: #fff; font-size: 56px; font-weight: 300; line-height: 1; }
+  .phone .date { text-align: center; color: #C7CCEB; font-size: 14px; margin: 6px 0 28px; }
+  .noti { background: rgba(255,255,255,.94); color: var(--ink); border-radius: 18px; padding: 12px 14px; box-shadow: 0 8px 20px rgba(0,0,0,.2); }
+  .noti + .noti { margin-top: 10px; opacity: .9; transform: scale(.97); }
+  .noti .app { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .noti .app img { width: 16px; height: 16px; border-radius: 4px; }
+  .noti .title { font-weight: 700; font-size: 15px; margin-top: 4px; }
+  .noti .body { font-size: 13px; color: #4E5968; }
+  .noti .actions { display: flex; gap: 8px; margin-top: 10px; }
+  .noti .actions span { flex: 1; text-align: center; font-size: 13px; font-weight: 700; padding: 8px 0; border-radius: 10px; background: #F2F4F6; color: var(--blue); }
+
+  section { padding: 72px 0; }
+  section.alt { background: var(--bg); }
+  h2 { font-size: clamp(26px, 4vw, 34px); line-height: 1.3; margin: 0 0 12px; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); margin: 0 0 36px; font-size: 17px; }
+
+  /* steps */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: s; }
+  .step { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 24px; }
+  .step::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--night); color: #fff; font-weight: 800; margin-bottom: 12px; }
+  .step h3 { margin: 0 0 6px; font-size: 18px; }
+  .step p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  /* grades */
+  .gender { display: inline-flex; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 4px; margin-bottom: 24px; }
+  .gender button { border: 0; background: none; font: inherit; font-weight: 700; padding: 8px 18px; border-radius: 999px; cursor: pointer; color: var(--muted); }
+  .gender button[aria-pressed="true"] { background: var(--night); color: #fff; }
+  .grades { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .grade { text-align: center; }
+  .grade .face { aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: var(--c); border: 4px solid #fff; box-shadow: 0 6px 16px rgba(0,0,0,.08); }
+  .grade .face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .grade b { display: block; margin-top: 10px; font-size: 17px; }
+  .grade small { color: var(--muted); font-size: 13px; }
+
+  /* features */
+  .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .feature { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 24px; display: flex; gap: 16px; }
+  .feature .emo { font-size: 28px; line-height: 1; }
+  .feature h3 { margin: 0 0 4px; font-size: 18px; }
+  .feature p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  /* privacy */
+  .privacy { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .privacy div { border-radius: 20px; padding: 22px; background: #fff; border: 1px solid var(--line); }
+  .privacy h3 { margin: 0 0 6px; font-size: 17px; }
+  .privacy p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  /* faq */
+  details { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; }
+  details + details { margin-top: 10px; }
+  summary { font-weight: 700; cursor: pointer; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; float: right; color: var(--muted); }
+  details[open] summary::after { content: "−"; }
+  details p { margin: 10px 0 0; color: #4E5968; }
+
+  /* closing */
+  .closing { background: var(--night); color: #fff; text-align: center; }
+  .closing h2 { color: #fff; }
+  .closing .sub { color: #C7CCEB; }
+  .closing .btns { justify-content: center; }
+
+  footer { background: #12152F; color: #8B91B8; font-size: 14px; padding: 32px 0 40px; }
+  footer nav { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-bottom: 12px; }
+  footer a { color: #C7CCEB; text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 760px) {
+    .hero { padding: 36px 0 56px; }
+    .hero .wrap { grid-template-columns: 1fr; }
+    .phone { width: 260px; }
+    .steps, .features, .privacy { grid-template-columns: 1fr; }
+    .grades { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .grade b { font-size: 14px; }
+    .grade small { font-size: 11px; }
+    section { padding: 56px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/"><img src="/img/icon.webp" alt="" width="32" height="32">야근수첩</a>
+    <a class="cta-sm" href="#tester">테스터 신청</a>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">곧 Google Play 출시</span>
+        <h1>오늘도 야근?<br><em>알림 한 번</em>으로<br>기록 끝.</h1>
+        <p class="lead">퇴근 시간에 오는 알림에서 [퇴근]이나 [야근]만 누르세요.<br>앱을 열지 않아도 이번 달 야근이 쌓여요.</p>
+        <div class="btns">
+          <a class="btn primary" href="#tester">출시 전 테스터 신청</a>
+          <span class="btn ghost" aria-disabled="true">Google Play 준비 중</span>
+        </div>
+        <p class="note">회원가입 없이 바로 시작 · 기록은 내 휴대폰에 저장</p>
+      </div>
+
+      <div class="phone" aria-label="잠금화면에 온 야근수첩 알림 예시">
+        <div class="clock">18:30</div>
+        <div class="date">11월 13일 금요일</div>
+        <div class="noti">
+          <div class="app"><img src="/img/icon.webp" alt="">야근수첩 · 지금</div>
+          <div class="title">퇴근 시간이에요</div>
+          <div class="body">오늘은 퇴근했나요, 아직 회사인가요?</div>
+          <div class="actions"><span>퇴근</span><span>야근</span></div>
+        </div>
+        <div class="noti">
+          <div class="app"><img src="/img/icon.webp" alt="">야근수첩 · 30분 뒤</div>
+          <div class="title">아직 회사세요?</div>
+          <div class="actions"><span>아직요</span><span>탈출</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2>적을 필요도, 앱을 열 필요도 없어요</h2>
+      <p class="sub">출퇴근 시간만 정해 두면 나머지는 알림이 챙겨요.</p>
+      <div class="steps">
+        <div class="step">
+          <h3>근무 시간 등록</h3>
+          <p>근무 요일과 출퇴근 시간을 한 번만 정해요. 분 단위로 입력할 수 있어요.</p>
+        </div>
+        <div class="step">
+          <h3>알림에서 버튼 하나</h3>
+          <p>퇴근 시간에 [퇴근] [야근] 알림이 와요. 야근 중이면 30분마다 다시 물어봐요.</p>
+        </div>
+        <div class="step">
+          <h3>쌓이는 내 야근</h3>
+          <p>캘린더와 리포트에 이번 달 야근이 자동으로 정리돼요.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt">
+    <div class="wrap">
+      <h2>나는 지금 몇 등급 야수?</h2>
+      <p class="sub">한 달 야근 횟수에 따라 캐릭터가 변해요. 칼퇴하면 다시 사람으로 돌아와요.</p>
+      <div class="gender" role="group" aria-label="캐릭터 성별">
+        <button type="button" data-g="m" aria-pressed="true">남성</button>
+        <button type="button" data-g="f" aria-pressed="false">여성</button>
+      </div>
+      <div class="grades">
+        <div class="grade"><div class="face" style="--c:#C0DD97"><img data-n="0" src="/img/m0.webp" alt="휴먼" loading="lazy"></div><b>휴먼</b><small>월 3회 미만</small></div>
+        <div class="grade"><div class="face" style="--c:#FAC775"><img data-n="1" src="/img/m1.webp" alt="야린이" loading="lazy"></div><b>야린이</b><small>월 3회 이상</small></div>
+        <div class="grade"><div class="face" style="--c:#F0997B"><img data-n="2" src="/img/m2.webp" alt="야수" loading="lazy"></div><b>야수</b><small>월 7회 이상</small></div>
+        <div class="grade"><div class="face" style="--c:#E24B4A"><img data-n="3" src="/img/m3.webp" alt="야왕" loading="lazy"></div><b>야왕</b><small>월 15회 이상</small></div>
+        <div class="grade"><div class="face" style="--c:#AFA9EC"><img data-n="4" src="/img/m4.webp" alt="야신" loading="lazy"></div><b>야신</b><small>월 20회 이상</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>한눈에 보는 내 야근</h2>
+      <p class="sub">숫자로 보면 더 실감 나요.</p>
+      <div class="features">
+        <div class="feature"><div class="emo">📅</div><div><h3>캘린더</h3><p>야근한 날이 1시간 이하, 2시간 이하, 2시간 초과로 색칠돼요.</p></div></div>
+        <div class="feature"><div class="emo">📊</div><div><h3>주간·월간 리포트</h3><p>요일별 패턴과 지난달 대비, 이번 달 획득한 칭호까지.</p></div></div>
+        <div class="feature"><div class="emo">😢</div><div><h3>놓친 가족시간</h3><p>이번 달 야근으로 가족과 함께하지 못한 시간을 보여 줘요.</p></div></div>
+        <div class="feature"><div class="emo">🍗</div><div><h3>치킨 환산</h3><p>이번 달 야근을 치킨으로 바꾸면 몇 마리? 최저시급 기준 참고값이에요.</p></div></div>
+        <div class="feature"><div class="emo">🏢</div><div><h3>업계 야수 현황</h3><p>업종·직군·회사 유형·나이대·직급별로 다른 직장인과 비교해요.</p></div></div>
+        <div class="feature"><div class="emo">⏱️</div><div><h3>분 단위 기록</h3><p>퇴근 시각을 분 단위로 남겨 두면 나중에 돌아볼 때 참고 자료가 돼요.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt">
+    <div class="wrap">
+      <h2>회사 몰래 써도 괜찮아요</h2>
+      <p class="sub">내 야근 기록은 나만 봐요.</p>
+      <div class="privacy">
+        <div><h3>회원가입 없음</h3><p>이름도 전화번호도 묻지 않아요. 앱을 열면 바로 시작해요.</p></div>
+        <div><h3>기록은 내 휴대폰에</h3><p>근무 기록은 휴대폰에 저장돼요. 백업은 원할 때만 이메일로 연결해요.</p></div>
+        <div><h3>회사 이름은 비교에 안 써요</h3><p>업계 비교는 30명 이상 모인 그룹의 합계만 보여 줘요.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2 style="margin-bottom:28px">자주 묻는 질문</h2>
+      <details>
+        <summary>무료인가요?</summary>
+        <p>네, 지금은 모든 기능이 무료예요.</p>
+      </details>
+      <details>
+        <summary>아이폰에서도 쓸 수 있나요?</summary>
+        <p>Google Play(안드로이드)에 먼저 출시하고, 앱스토어는 그다음에 준비할 예정이에요.</p>
+      </details>
+      <details>
+        <summary>알림이 늦게 와요.</summary>
+        <p>휴대폰 설정 → 애플리케이션 → 야근수첩에서 '알람 및 리마인더'를 허용하고, 배터리 사용을 '제한 없음'으로 바꿔 주세요. 앱의 설정 화면에서도 바로 이동할 수 있어요.</p>
+      </details>
+      <details>
+        <summary>야근 기록을 회사에 청구하는 증거로 쓸 수 있나요?</summary>
+        <p>야근수첩의 기록은 스스로 남기는 개인 기록이라 법적 효력을 보장하지 않아요. 다만 분 단위로 꾸준히 남긴 기록은 나중에 근무 시간을 돌아볼 때 참고 자료가 될 수 있어요. 임금 청구 같은 판단이 필요하면 고용노동부나 노무사와 상담하세요.</p>
+      </details>
+      <details>
+        <summary>계정과 기록을 지우고 싶어요.</summary>
+        <p>앱의 설정 → 맨 아래 [계정 삭제하기]를 누르면 서버의 데이터까지 바로 지워져요. <a href="https://docs.google.com/document/d/e/2PACX-1vSS5FSWCT8OVlLGiSjpTKMByoJHzYRl1yPqCDpiIfU1pirLzm_0QzppCYC6xLEPHug3XS79JCFoiD1u/pub">계정 삭제 안내</a>에서 자세히 볼 수 있어요.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="closing" id="tester">
+    <div class="wrap">
+      <h2>출시 전 테스터를 모집해요</h2>
+      <p class="sub">안드로이드폰을 쓰는 직장인이라면 누구나 환영해요.<br>Google Play 비공개 테스트로 14일 동안 먼저 써 보고 의견을 들려주세요.</p>
+      <div class="btns">
+        <a class="btn primary" href="mailto:mokhee8790@gmail.com?subject=%5B%EC%95%BC%EA%B7%BC%EC%88%98%EC%B2%A9%5D%20%ED%85%8C%EC%8A%A4%ED%84%B0%20%EC%8B%A0%EC%B2%AD&amp;body=Google%20Play%EC%97%90%20%EB%A1%9C%EA%B7%B8%EC%9D%B8%EB%90%9C%20%EC%A7%80%EB%A9%94%EC%9D%BC%20%EC%A3%BC%EC%86%8C%3A%20">메일로 테스터 신청하기</a>
+      </div>
+      <p class="note">Google Play에 로그인된 지메일 주소를 적어 보내 주세요.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <nav>
+      <a href="https://docs.google.com/document/d/e/2PACX-1vRre3TMJ7j19VPk9RVnCMR4DJ2M9FBaYYa7oXkBrNbt9EqnoBcUYUwGBN9fWKDTfwY7YJPQ15uZqsE2/pub">개인정보처리방침</a>
+      <a href="https://docs.google.com/document/d/e/2PACX-1vTTfckLy9pUJYTlccwHbhXRfreDuSFja4Py9QzGKOLyEIDarP7low2h96JfMn6f7JfjdI2VDj6CWEBh/pub">이용약관</a>
+      <a href="https://docs.google.com/document/d/e/2PACX-1vSS5FSWCT8OVlLGiSjpTKMByoJHzYRl1yPqCDpiIfU1pirLzm_0QzppCYC6xLEPHug3XS79JCFoiD1u/pub">계정 삭제 안내</a>
+      <a href="mailto:mokhee8790@gmail.com">문의</a>
+    </nav>
+    <div>© 2026 야근수첩</div>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll('.gender button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var g = btn.dataset.g;
+      document.querySelectorAll('.gender button').forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b === btn));
+      });
+      document.querySelectorAll('.grade img').forEach(function (img) {
+        img.src = '/img/' + g + img.dataset.n + '.webp';
+      });
+    });
+  });
+</script>
+</body>
+</html>
